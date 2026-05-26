@@ -8,150 +8,165 @@ from models.models import Opportunity, OpportunityType
 
 logger = logging.getLogger(__name__)
 
-GRANTS_GOV_API = "https://api.grants.gov/v2/api/search"
-SAM_GOV_API = "https://api.sam.gov/opportunities/v2/search"
+FEDERAL_REGISTER_API = "https://www.federalregister.gov/api/v1/documents.json"
 
-STATE_RSS_FEEDS = [
-    {"state": "CA", "url": "https://www.grants.ca.gov/rss/opportunities.xml", "source": "CA Grants Portal"},
-    {"state": "NY", "url": "https://grantsreform.ny.gov/opportunities/rss", "source": "NY Grants"},
-    {"state": "TX", "url": "https://comptroller.texas.gov/purchasing/contracts/rss.xml", "source": "TX Comptroller"},
+GRANT_SEARCH_TERMS = [
+    "notice of funding opportunity",
+    "nofo grant",
+    "cooperative agreement funding",
+    "grant announcement",
+    "funding opportunity announcement",
 ]
 
 
-def fetch_grants_gov(db: Session):
-    """Fetch recent grants from grants.gov public API."""
+def fetch_federal_register(db: Session):
+    """Fetch grant notices from the Federal Register public API (no auth required)."""
+    saved = 0
     try:
-        payload = {
-            "keyword": "",
-            "oppStatuses": "forecasted|posted",
-            "rows": 50,
-            "sortBy": "openDate|desc",
-        }
-        resp = httpx.post(GRANTS_GOV_API, json=payload, timeout=30)
-        resp.raise_for_status()
-        data = resp.json()
+        for term in GRANT_SEARCH_TERMS[:3]:
+            params = [
+                ("per_page", "20"),
+                ("order", "newest"),
+                ("conditions[term]", term),
+                ("fields[]", "title"),
+                ("fields[]", "abstract"),
+                ("fields[]", "agencies"),
+                ("fields[]", "publication_date"),
+                ("fields[]", "html_url"),
+                ("fields[]", "document_number"),
+                ("fields[]", "action"),
+            ]
+            resp = httpx.get(FEDERAL_REGISTER_API, params=params, follow_redirects=True, timeout=20)
+            resp.raise_for_status()
+            data = resp.json()
 
-        saved = 0
-        for item in data.get("oppHits", []):
-            external_id = f"grants.gov-{item.get('id')}"
-            existing = db.query(Opportunity).filter_by(external_id=external_id).first()
-            if existing:
-                continue
+            for item in data.get("results", []):
+                doc_num = item.get("document_number", "")
+                external_id = f"federal-register-{doc_num}"
+                if not doc_num:
+                    continue
+                existing = db.query(Opportunity).filter_by(external_id=external_id).first()
+                if existing:
+                    continue
 
-            close_date = None
-            if item.get("closeDate"):
-                try:
-                    close_date = datetime.strptime(item["closeDate"], "%m%d%Y")
-                except Exception:
-                    pass
+                title = item.get("title", "")
+                # Skip non-grant documents
+                title_lower = title.lower()
+                if not any(kw in title_lower for kw in ["grant", "funding opportunity", "nofo", "cooperative agreement", "notice of award"]):
+                    continue
 
-            posted_date = None
-            if item.get("openDate"):
-                try:
-                    posted_date = datetime.strptime(item["openDate"], "%m%d%Y")
-                except Exception:
-                    pass
+                agencies = item.get("agencies", [])
+                agency_name = agencies[0].get("name", "") if agencies else ""
 
-            opp = Opportunity(
-                external_id=external_id,
-                title=item.get("title", "")[:500],
-                description=item.get("synopsis", ""),
-                opportunity_type=OpportunityType.grant,
-                source="grants.gov",
-                source_url=f"https://www.grants.gov/search-results-detail/{item.get('id')}",
-                agency=item.get("agencyName", ""),
-                funding_amount=item.get("awardFloor"),
-                funding_amount_max=item.get("awardCeiling"),
-                posted_date=posted_date,
-                close_date=close_date,
-                category=item.get("oppCategory", {}).get("cat", ""),
-                cfda_number=item.get("cfdaList", [""])[0] if item.get("cfdaList") else "",
-            )
-            db.add(opp)
-            saved += 1
+                posted_date = None
+                if item.get("publication_date"):
+                    try:
+                        posted_date = datetime.strptime(item["publication_date"], "%Y-%m-%d")
+                    except Exception:
+                        pass
+
+                opp = Opportunity(
+                    external_id=external_id,
+                    title=title[:500],
+                    description=item.get("abstract") or item.get("action") or "",
+                    opportunity_type=OpportunityType.grant,
+                    source="Federal Register",
+                    source_url=item.get("html_url", ""),
+                    agency=agency_name,
+                    posted_date=posted_date,
+                )
+                db.add(opp)
+                saved += 1
 
         db.commit()
-        logger.info(f"grants.gov: saved {saved} new opportunities")
+        logger.info(f"Federal Register: saved {saved} new opportunities")
         return saved
     except Exception as e:
-        logger.error(f"grants.gov fetch error: {e}")
+        logger.error(f"Federal Register fetch error: {e}")
         db.rollback()
         return 0
 
 
-def fetch_sam_gov(db: Session, api_key: str = "DEMO_KEY"):
-    """Fetch recent RFPs/contracts from SAM.gov public API."""
+def fetch_usaspending(db: Session):
+    """Fetch recent federal awards/grants from USASpending.gov public API."""
     try:
-        params = {
-            "api_key": api_key,
-            "limit": 50,
-            "offset": 0,
-            "postedFrom": datetime.now().strftime("%m/%d/%Y"),
-            "ptype": "o,p,r,s",  # solicitations, presolicitations, sources sought, special notices
+        payload = {
+            "filters": {
+                "award_type_codes": ["02", "03", "04", "05"],  # grants
+                "time_period": [{"start_date": "2026-01-01", "end_date": datetime.now().strftime("%Y-%m-%d")}],
+            },
+            "fields": ["Award ID", "Recipient Name", "Award Amount", "Awarding Agency", "Award Type", "Description", "Period of Performance Current End Date"],
+            "page": 1,
+            "limit": 20,
+            "sort": "Award Amount",
+            "order": "desc",
         }
-        resp = httpx.get(SAM_GOV_API, params=params, timeout=30)
+        resp = httpx.post(
+            "https://api.usaspending.gov/api/v2/search/spending_by_award/",
+            json=payload,
+            timeout=20,
+            follow_redirects=True,
+        )
         resp.raise_for_status()
         data = resp.json()
 
         saved = 0
-        for item in data.get("opportunitiesData", []):
-            external_id = f"sam.gov-{item.get('noticeId')}"
+        for item in data.get("results", []):
+            award_id = item.get("Award ID", "")
+            if not award_id:
+                continue
+            external_id = f"usaspending-{award_id}"
             existing = db.query(Opportunity).filter_by(external_id=external_id).first()
             if existing:
                 continue
 
-            opp_type = OpportunityType.rfp
-            ptype = item.get("type", "").lower()
-            if "rfq" in ptype or "quote" in ptype:
-                opp_type = OpportunityType.rfq
-            elif "rfi" in ptype or "information" in ptype:
-                opp_type = OpportunityType.rfi
-            elif "contract" in ptype:
-                opp_type = OpportunityType.contract
-
             close_date = None
-            if item.get("responseDeadLine"):
+            if item.get("Period of Performance Current End Date"):
                 try:
-                    close_date = datetime.fromisoformat(item["responseDeadLine"].replace("Z", "+00:00"))
+                    close_date = datetime.strptime(item["Period of Performance Current End Date"], "%Y-%m-%d")
                 except Exception:
                     pass
 
-            posted_date = None
-            if item.get("postedDate"):
-                try:
-                    posted_date = datetime.fromisoformat(item["postedDate"].replace("Z", "+00:00"))
-                except Exception:
-                    pass
+            amount = item.get("Award Amount")
+            try:
+                amount = float(amount) if amount else None
+            except Exception:
+                amount = None
 
             opp = Opportunity(
                 external_id=external_id,
-                title=item.get("title", "")[:500],
-                description=item.get("description", ""),
-                opportunity_type=opp_type,
-                source="sam.gov",
-                source_url=item.get("uiLink", ""),
-                agency=item.get("departmentName", "") or item.get("subtierName", ""),
-                posted_date=posted_date,
+                title=f"Federal Grant — {item.get('Recipient Name', 'Unknown Recipient')}",
+                description=item.get("Description") or "",
+                opportunity_type=OpportunityType.grant,
+                source="USASpending.gov",
+                source_url=f"https://www.usaspending.gov/award/{award_id}",
+                agency=item.get("Awarding Agency", ""),
+                funding_amount_max=amount,
                 close_date=close_date,
-                naics_code=item.get("naicsCode", ""),
-                state=item.get("placeOfPerformance", {}).get("state", {}).get("code", ""),
+                posted_date=datetime.now(timezone.utc),
             )
             db.add(opp)
             saved += 1
 
         db.commit()
-        logger.info(f"sam.gov: saved {saved} new opportunities")
+        logger.info(f"USASpending: saved {saved} new opportunities")
         return saved
     except Exception as e:
-        logger.error(f"sam.gov fetch error: {e}")
+        logger.error(f"USASpending fetch error: {e}")
         db.rollback()
         return 0
 
 
 def fetch_state_feeds(db: Session):
-    """Fetch from state grant RSS feeds."""
+    """Fetch from state grant RSS/Atom feeds."""
+    STATE_FEEDS = [
+        {"state": "CA", "url": "https://www.grants.ca.gov/api/v1/grants/rss", "source": "CA Grants Portal"},
+        {"state": "TX", "url": "https://comptroller.texas.gov/purchasing/contracts/rss.xml", "source": "TX Comptroller"},
+        {"state": "NY", "url": "https://apps.cio.ny.gov/apps/cfa/rss", "source": "NY Funding"},
+    ]
+
     total_saved = 0
-    for feed_config in STATE_RSS_FEEDS:
+    for feed_config in STATE_FEEDS:
         try:
             feed = feedparser.parse(feed_config["url"])
             saved = 0
@@ -187,8 +202,8 @@ def fetch_state_feeds(db: Session):
 def run_full_crawl(db: Session):
     """Run all crawlers and return total saved."""
     total = 0
-    total += fetch_grants_gov(db)
-    total += fetch_sam_gov(db)
+    total += fetch_federal_register(db)
+    total += fetch_usaspending(db)
     total += fetch_state_feeds(db)
     logger.info(f"Full crawl complete: {total} new opportunities saved")
     return total
