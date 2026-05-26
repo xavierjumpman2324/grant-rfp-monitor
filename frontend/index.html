@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grant & RFP Monitor — AI-Powered Funding Alerts</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111827; background: #fff; }
+  a { text-decoration: none; color: inherit; }
+
+  /* NAV */
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0 5%; height: 64px; border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; background: #fff; z-index: 100; }
+  .nav-logo { font-size: 18px; font-weight: 700; color: #2563eb; }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links a { font-size: 14px; color: #6b7280; }
+  .nav-links a:hover { color: #111827; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+  .btn-primary { background: #2563eb; color: white; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-outline { border: 1px solid #d1d5db; color: #374151; background: white; }
+  .btn-outline:hover { border-color: #9ca3af; }
+  .btn-lg { padding: 12px 28px; font-size: 15px; }
+
+  /* HERO */
+  .hero { text-align: center; padding: 80px 5% 60px; background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); }
+  .hero-badge { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 20px; }
+  .hero h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 800; line-height: 1.15; color: #111827; max-width: 800px; margin: 0 auto 20px; }
+  .hero h1 span { color: #2563eb; }
+  .hero p { font-size: 18px; color: #6b7280; max-width: 600px; margin: 0 auto 36px; line-height: 1.6; }
+  .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .hero-sub { margin-top: 16px; font-size: 13px; color: #9ca3af; }
+
+  /* STATS */
+  .stats { display: flex; justify-content: center; gap: 48px; padding: 40px 5%; border-bottom: 1px solid #f3f4f6; flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat-num { font-size: 28px; font-weight: 800; color: #111827; }
+  .stat-label { font-size: 13px; color: #6b7280; margin-top: 4px; }
+
+  /* HOW IT WORKS */
+  section { padding: 72px 5%; }
+  .section-label { font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  h2 { font-size: clamp(24px, 3vw, 36px); font-weight: 800; color: #111827; margin-bottom: 16px; }
+  .section-sub { font-size: 17px; color: #6b7280; max-width: 560px; line-height: 1.6; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 32px; margin-top: 48px; }
+  .step { display: flex; flex-direction: column; gap: 12px; }
+  .step-num { width: 40px; height: 40px; background: #dbeafe; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: #2563eb; }
+  .step h3 { font-size: 16px; font-weight: 700; color: #111827; }
+  .step p { font-size: 14px; color: #6b7280; line-height: 1.6; }
+
+  /* FEATURES */
+  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 48px; }
+  .feature-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; transition: box-shadow .2s; }
+  .feature-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+  .feature-icon { font-size: 28px; margin-bottom: 12px; }
+  .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .feature-card p { font-size: 14px; color: #6b7280; line-height: 1.6; }
+
+  /* PRICING */
+  .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-top: 48px; max-width: 900px; }
+  .price-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 28px; position: relative; }
+  .price-card.popular { border-color: #2563eb; box-shadow: 0 0 0 1px #2563eb; }
+  .popular-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #2563eb; color: white; padding: 3px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .price-plan { font-size: 13px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .price-amount { font-size: 36px; font-weight: 800; color: #111827; }
+  .price-amount span { font-size: 16px; font-weight: 500; color: #6b7280; }
+  .price-desc { font-size: 13px; color: #6b7280; margin: 8px 0 20px; }
+  .price-features { list-style: none; margin-bottom: 24px; }
+  .price-features li { font-size: 14px; color: #374151; padding: 5px 0; display: flex; gap: 8px; align-items: start; }
+  .price-features li::before { content: "✓"; color: #16a34a; font-weight: 700; flex-shrink: 0; }
+
+  /* TESTIMONIALS */
+  .testimonials { background: #f9fafb; }
+  .testimonial-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 48px; }
+  .testimonial { background: white; border-radius: 12px; padding: 24px; border: 1px solid #e5e7eb; }
+  .testimonial-text { font-size: 15px; color: #374151; line-height: 1.7; font-style: italic; margin-bottom: 16px; }
+  .testimonial-author { font-size: 13px; font-weight: 700; color: #111827; }
+  .testimonial-role { font-size: 12px; color: #6b7280; }
+
+  /* CTA BANNER */
+  .cta-banner { background: #2563eb; color: white; text-align: center; padding: 64px 5%; }
+  .cta-banner h2 { color: white; margin-bottom: 16px; }
+  .cta-banner p { color: rgba(255,255,255,.8); font-size: 17px; margin-bottom: 32px; }
+  .btn-white { background: white; color: #2563eb; }
+  .btn-white:hover { background: #f0f9ff; }
+
+  /* FOOTER */
+  footer { padding: 32px 5%; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  footer p { font-size: 13px; color: #9ca3af; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.active { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 32px; width: 100%; max-width: 440px; position: relative; }
+  .modal h2 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+  .modal p { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+  .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 20px; cursor: pointer; color: #9ca3af; }
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+  input, select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; transition: border .15s; }
+  input:focus, select:focus { border-color: #2563eb; }
+  .tag-input-container { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid #d1d5db; border-radius: 8px; cursor: text; min-height: 44px; }
+  .tag { background: #dbeafe; color: #1d4ed8; padding: 2px 10px; border-radius: 20px; font-size: 13px; display: flex; align-items: center; gap: 4px; }
+  .tag button { background: none; border: none; cursor: pointer; color: #1d4ed8; font-size: 14px; padding: 0; line-height: 1; }
+  .tag-input { border: none; outline: none; font-size: 13px; flex: 1; min-width: 80px; }
+  .form-hint { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+  .error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; }
+  .modal-tabs { display: flex; border-bottom: 1px solid #e5e7eb; margin-bottom: 24px; }
+  .modal-tab { padding: 8px 16px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; }
+  .modal-tab.active { color: #2563eb; border-bottom-color: #2563eb; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Grant & RFP Monitor</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#how-it-works">How It Works</a>
+    <button class="btn btn-outline" onclick="openModal('login')">Log In</button>
+    <button class="btn btn-primary" onclick="openModal('register')">Start Free Trial</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge">🔔 AI-Powered Opportunity Monitoring</div>
+  <h1>Never Miss a <span>Grant or RFP</span><br>That's Right for You</h1>
+  <p>We monitor grants.gov, SAM.gov, and 40+ state portals 24/7. AI matches every new opportunity to your organization and alerts you instantly — before deadlines sneak up.</p>
+  <div class="hero-cta">
+    <button class="btn btn-primary btn-lg" onclick="openModal('register')">Start 14-Day Free Trial</button>
+    <a href="#how-it-works" class="btn btn-outline btn-lg">See How It Works</a>
+  </div>
+  <p class="hero-sub">No credit card required &bull; Setup in 2 minutes &bull; Cancel anytime</p>
+</section>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num">50,000+</div><div class="stat-label">Opportunities monitored monthly</div></div>
+  <div class="stat"><div class="stat-num">40+</div><div class="stat-label">Federal & state sources</div></div>
+  <div class="stat"><div class="stat-num">6 hrs</div><div class="stat-label">Update frequency</div></div>
+  <div class="stat"><div class="stat-num">$500B+</div><div class="stat-label">In grants posted annually</div></div>
+</div>
+
+<section id="how-it-works">
+  <div class="section-label">How It Works</div>
+  <h2>From posting to your inbox in hours</h2>
+  <p class="section-sub">Tell us who you are and what you're looking for. We handle everything else automatically.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Set your profile</h3>
+      <p>Tell us your organization type, focus areas (healthcare, education, infrastructure, etc.), and preferred states. Takes 2 minutes.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>We monitor 24/7</h3>
+      <p>Our crawler checks grants.gov, SAM.gov, and state portals every 6 hours. Every new opportunity is captured the moment it's posted.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>AI filters & scores</h3>
+      <p>Claude AI reads every opportunity and scores it for relevance to your specific organization. Only the best matches reach your inbox.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h3>You get alerted instantly</h3>
+      <p>Email alerts with a plain-English summary, funding amount, deadline, and action steps — everything you need to decide whether to apply.</p>
+    </div>
+  </div>
+</section>
+
+<section id="features" style="background:#f9fafb;">
+  <div class="section-label">Features</div>
+  <h2>Everything you need to win more funding</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <h3>AI Relevance Scoring</h3>
+      <p>Every opportunity gets an AI-powered relevance score based on your focus areas, organization type, and location. Stop wading through irrelevant results.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Instant Alerts</h3>
+      <p>Get notified the moment a matching grant or RFP is posted — not days later. High-severity matches trigger immediate email alerts.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🗺️</div>
+      <h3>Federal + State Coverage</h3>
+      <p>Monitors grants.gov, SAM.gov (RFPs/contracts), and state grant portals in one place. No more checking 10 different websites.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💬</div>
+      <h3>AI Grant Advisor</h3>
+      <p>Ask our AI advisor anything — "What's the best federal grant for a rural health clinic?" or "How do I write a strong needs statement?" Available 24/7.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <h3>Application Tracker</h3>
+      <p>Save opportunities and track your application pipeline — from tracking → applying → submitted → won. Never lose track of a deadline again.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Weekly Digest</h3>
+      <p>Every Monday, get a curated summary of your top 10 opportunities for the week with AI-written highlights and urgent deadlines flagged.</p>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="section-label">Pricing</div>
+  <h2>Simple, transparent pricing</h2>
+  <p class="section-sub">Start free for 14 days. No credit card required.</p>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-plan">Starter</div>
+      <div class="price-amount">$299<span>/mo</span></div>
+      <div class="price-desc">Perfect for solo practices and small nonprofits</div>
+      <ul class="price-features">
+        <li>Up to 3 focus area keywords</li>
+        <li>grants.gov + SAM.gov monitoring</li>
+        <li>Email alerts (daily digest)</li>
+        <li>AI relevance scoring</li>
+        <li>Save up to 25 opportunities</li>
+        <li>AI advisor (50 questions/mo)</li>
+      </ul>
+      <button class="btn btn-outline" style="width:100%" onclick="openModal('register')">Start Free Trial</button>
+    </div>
+    <div class="price-card popular">
+      <div class="popular-badge">Most Popular</div>
+      <div class="price-plan">Pro</div>
+      <div class="price-amount">$799<span>/mo</span></div>
+      <div class="price-desc">For growing organizations and government contractors</div>
+      <ul class="price-features">
+        <li>Unlimited focus area keywords</li>
+        <li>All federal + 50 state portals</li>
+        <li>Instant high-priority alerts</li>
+        <li>Advanced AI scoring + action items</li>
+        <li>Unlimited saved opportunities</li>
+        <li>Unlimited AI advisor</li>
+        <li>Weekly digest email</li>
+        <li>Application pipeline tracker</li>
+      </ul>
+      <button class="btn btn-primary" style="width:100%" onclick="openModal('register')">Start Free Trial</button>
+    </div>
+    <div class="price-card">
+      <div class="price-plan">Enterprise</div>
+      <div class="price-amount">$1,999<span>/mo</span></div>
+      <div class="price-desc">For large contractors, MSOs, and consulting firms</div>
+      <ul class="price-features">
+        <li>Everything in Pro</li>
+        <li>Multiple team seats</li>
+        <li>Custom keyword profiles per user</li>
+        <li>API access</li>
+        <li>Priority support</li>
+        <li>Custom integrations</li>
+      </ul>
+      <button class="btn btn-outline" style="width:100%" onclick="openModal('register')">Contact Sales</button>
+    </div>
+  </div>
+</section>
+
+<section class="testimonials">
+  <div class="section-label">Who Uses It</div>
+  <h2>Built for the people chasing funding</h2>
+  <div class="testimonial-grid">
+    <div class="testimonial">
+      <p class="testimonial-text">"We won a $340K HRSA grant that we almost missed — the alert came in 3 days after it was posted and we had plenty of time to prepare a strong application."</p>
+      <div class="testimonial-author">Community Health Clinic Director</div>
+      <div class="testimonial-role">Los Angeles, CA</div>
+    </div>
+    <div class="testimonial">
+      <p class="testimonial-text">"As a government contractor, SAM.gov is everything. This tool surfaces the right RFPs for our NAICS codes instantly. Worth every dollar."</p>
+      <div class="testimonial-author">Operations Manager</div>
+      <div class="testimonial-role">IT Consulting Firm, Virginia</div>
+    </div>
+    <div class="testimonial">
+      <p class="testimonial-text">"I used to spend 2 hours a week checking grant sites. Now I spend 10 minutes reviewing alerts and my team focuses on writing applications instead."</p>
+      <div class="testimonial-author">Grants Manager</div>
+      <div class="testimonial-role">Workforce Development Nonprofit, Texas</div>
+    </div>
+  </div>
+</section>
+
+<div class="cta-banner">
+  <h2>Start finding funding opportunities today</h2>
+  <p>14-day free trial. No credit card. Setup in 2 minutes.</p>
+  <button class="btn btn-white btn-lg" onclick="openModal('register')">Start Free Trial →</button>
+</div>
+
+<footer>
+  <p>© 2026 Grant & RFP Monitor. For informational purposes only — always verify opportunities directly with the source.</p>
+  <div style="display:flex;gap:16px;">
+    <a href="#" style="font-size:13px;color:#9ca3af;">Privacy</a>
+    <a href="#" style="font-size:13px;color:#9ca3af;">Terms</a>
+  </div>
+</footer>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-tabs">
+      <div class="modal-tab active" id="tab-register" onclick="switchTab('register')">Create Account</div>
+      <div class="modal-tab" id="tab-login" onclick="switchTab('login')">Log In</div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="form-register">
+      <h2>Start your free trial</h2>
+      <p>14 days free, no credit card needed</p>
+      <div class="form-group">
+        <label>Organization Name</label>
+        <input type="text" id="reg-org" placeholder="Acme Nonprofit" />
+      </div>
+      <div class="form-group">
+        <label>Organization Type</label>
+        <select id="reg-type">
+          <option value="">Select type...</option>
+          <option value="nonprofit">Nonprofit / 501(c)(3)</option>
+          <option value="contractor">Government Contractor</option>
+          <option value="consultant">Grant Consultant</option>
+          <option value="government">Government Agency</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Focus Areas <span style="color:#9ca3af;font-weight:400">(press Enter to add)</span></label>
+        <div class="tag-input-container" id="focus-tags-container" onclick="document.getElementById('focus-tag-input').focus()">
+          <input class="tag-input" id="focus-tag-input" placeholder="e.g. healthcare, workforce..." onkeydown="handleTagInput(event,'focus')" />
+        </div>
+        <p class="form-hint">Keywords: healthcare, education, housing, workforce, environment, technology...</p>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="you@organization.org" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="At least 8 characters" />
+      </div>
+      <div id="reg-error" class="error-msg"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:12px" onclick="handleRegister()">Create Account & Start Trial</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="form-login" style="display:none">
+      <h2>Welcome back</h2>
+      <p>Log in to your dashboard</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@organization.org" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Your password" />
+      </div>
+      <div id="login-error" class="error-msg"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;padding:12px" onclick="handleLogin()">Log In</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+const focusTags = [];
+
+function openModal(tab) {
+  document.getElementById('authModal').classList.add('active');
+  switchTab(tab);
+}
+function closeModal() {
+  document.getElementById('authModal').classList.remove('active');
+}
+document.getElementById('authModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function switchTab(tab) {
+  document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+  document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+}
+
+function handleTagInput(e, type) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,$/, '');
+    if (val && !focusTags.includes(val)) {
+      focusTags.push(val);
+      renderTags();
+    }
+    e.target.value = '';
+  }
+}
+
+function removeTag(tag) {
+  focusTags.splice(focusTags.indexOf(tag), 1);
+  renderTags();
+}
+
+function renderTags() {
+  const container = document.getElementById('focus-tags-container');
+  const input = document.getElementById('focus-tag-input');
+  container.innerHTML = '';
+  focusTags.forEach(tag => {
+    const el = document.createElement('span');
+    el.className = 'tag';
+    el.innerHTML = `${tag}<button onclick="removeTag('${tag}')">×</button>`;
+    container.appendChild(el);
+  });
+  container.appendChild(input);
+}
+
+async function handleRegister() {
+  const org = document.getElementById('reg-org').value.trim();
+  const type = document.getElementById('reg-type').value;
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const errEl = document.getElementById('reg-error');
+  errEl.textContent = '';
+
+  if (!org || !type || !email || !password) { errEl.textContent = 'Please fill in all fields.'; return; }
+  if (password.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; return; }
+
+  try {
+    const res = await fetch(`${API}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, organization_name: org, organization_type: type, focus_areas: focusTags, states: [] }),
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.detail || 'Registration failed.'; return; }
+    localStorage.setItem('token', data.access_token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    window.location.href = '/dashboard.html';
+  } catch (e) {
+    errEl.textContent = 'Server error. Please try again.';
+  }
+}
+
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const form = new URLSearchParams();
+  form.append('username', email);
+  form.append('password', password);
+
+  try {
+    const res = await fetch(`${API}/auth/login`, { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.detail || 'Login failed.'; return; }
+    localStorage.setItem('token', data.access_token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    window.location.href = '/dashboard.html';
+  } catch (e) {
+    errEl.textContent = 'Server error. Please try again.';
+  }
+}
+
+// Redirect if already logged in
+if (localStorage.getItem('token')) window.location.href = '/dashboard.html';
+</script>
+</body>
+</html>
