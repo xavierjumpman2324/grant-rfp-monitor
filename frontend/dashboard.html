@@ -106,7 +106,7 @@
       <span class="icon">📋</span> Saved
     </div>
     <div class="nav-item" onclick="showSection('chat')" id="nav-chat">
-      <span class="icon">💬</span> AI Advisor
+      <span class="icon">💬</span> Grant Advisor
     </div>
   </div>
   <div class="sidebar-bottom">
@@ -168,10 +168,10 @@
     <div id="section-chat" style="display:none">
       <div class="chat-container">
         <div class="chat-messages" id="chat-messages">
-          <div class="chat-msg assistant">👋 Hi! I'm your AI grant advisor. Ask me anything — "What grants are available for rural healthcare?", "How do I write a competitive needs statement?", or "What's the difference between a grant and a cooperative agreement?" I'm here to help.</div>
+          <div class="chat-msg assistant">👋 Hi! Ask us anything about grants and funding — "What grants are available for rural healthcare?", "How do I write a competitive needs statement?", or "What's the difference between a grant and a cooperative agreement?" We're here to help.</div>
         </div>
         <div class="chat-input-row">
-          <input type="text" id="chat-input" placeholder="Ask about grants, RFPs, applications..." onkeydown="if(event.key==='Enter')sendChat()" />
+          <input type="text" id="chat-input" placeholder="Ask us about grants, RFPs, applications..." onkeydown="if(event.key==='Enter')sendChat()" />
           <button class="chat-send" onclick="sendChat()">Send</button>
         </div>
       </div>
@@ -212,7 +212,7 @@ function showSection(name) {
     document.getElementById(`section-${s}`).style.display = s === name ? 'block' : 'none';
     document.getElementById(`nav-${s}`).classList.toggle('active', s === name);
   });
-  const titles = { alerts: 'My Alerts', browse: 'Browse Opportunities', saved: 'Saved Opportunities', chat: 'AI Grant Advisor' };
+  const titles = { alerts: 'My Alerts', browse: 'Browse Opportunities', saved: 'Saved Opportunities', chat: 'Grant Advisor' };
   document.getElementById('section-title').textContent = titles[name];
   if (name === 'browse' && document.getElementById('browse-list').children[0]?.className === 'loading') runSearch();
   if (name === 'saved') loadSaved();
