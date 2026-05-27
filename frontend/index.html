@@ -279,57 +279,9 @@
     <div class="updated-tag"><div class="live-dot"></div> Updated 2 min ago</div>
   </div>
 
-  <!-- VISIBLE ROWS (3 real ones) -->
+  <!-- VISIBLE ROWS (real data) -->
   <div id="visible-rows">
-
-    <div class="grant-row reveal">
-      <div>
-        <div class="grant-title">Notice of Funding Opportunity — Rural Business Development Grants, Rural Transportation FY2026</div>
-        <div class="grant-meta">
-          <span class="grant-tag agency">🏛 USDA Rural Business-Cooperative Service</span>
-          <span class="grant-tag">📁 Federal Register</span>
-          <span class="grant-tag"><span class="type-badge type-grant">GRANT</span></span>
-          <span class="grant-tag">📅 Posted today</span>
-        </div>
-      </div>
-      <div class="grant-right">
-        <div class="grant-amount">Up to $500K</div>
-        <div class="grant-deadline urgent">Closes Jun 30</div>
-      </div>
-    </div>
-
-    <div class="grant-row reveal" style="transition-delay:0.1s">
-      <div>
-        <div class="grant-title">Federal Grant — California Dept of Health Care Services, Medicaid Administrative Funding</div>
-        <div class="grant-meta">
-          <span class="grant-tag agency">🏛 Dept of Health and Human Services</span>
-          <span class="grant-tag">📁 USASpending.gov</span>
-          <span class="grant-tag"><span class="type-badge type-grant">GRANT</span></span>
-          <span class="grant-tag">📅 Posted today</span>
-        </div>
-      </div>
-      <div class="grant-right">
-        <div class="grant-amount">$1.2M+</div>
-        <div class="grant-deadline">Ongoing</div>
-      </div>
-    </div>
-
-    <div class="grant-row reveal" style="transition-delay:0.2s">
-      <div>
-        <div class="grant-title">Workforce Innovation and Opportunity Act — Youth Services Program Funding FY2026</div>
-        <div class="grant-meta">
-          <span class="grant-tag agency">🏛 Dept of Labor, Employment & Training</span>
-          <span class="grant-tag">📁 Federal Register</span>
-          <span class="grant-tag"><span class="type-badge type-grant">GRANT</span></span>
-          <span class="grant-tag">📅 Posted 2 days ago</span>
-        </div>
-      </div>
-      <div class="grant-right">
-        <div class="grant-amount">$750K</div>
-        <div class="grant-deadline urgent">Closes Jul 15</div>
-      </div>
-    </div>
-
+    <div class="grant-row reveal" style="justify-content:center;color:#475569;font-size:13px;">Loading latest opportunities...</div>
   </div>
 
   <!-- BLURRED ROWS (locked) -->
@@ -597,6 +549,62 @@ async function handleLogin() {
   } catch { errEl.textContent = 'Server error. Please try again.'; }
 }
 
+// Load real opportunities from database
+async function loadPublicOpportunities() {
+  try {
+    const res = await fetch('/opportunities/public');
+    const data = await res.json();
+    const list = document.getElementById('visible-rows');
+
+    if (!data.items || !data.items.length) {
+      list.innerHTML = '<div class="grant-row reveal" style="justify-content:center;color:#475569;font-size:13px;">No opportunities loaded yet — check back soon.</div>';
+      return;
+    }
+
+    // Update total count
+    const total = data.total || data.items.length;
+    document.querySelectorAll('.results-count strong').forEach(el => {
+      el.textContent = `3 of ${total.toLocaleString()}`;
+    });
+    document.getElementById('stat-total') && animateStat('stat-total', total);
+
+    list.innerHTML = data.items.map((o, i) => {
+      const funding = o.funding_amount_max ? `$${Number(o.funding_amount_max).toLocaleString()}` : 'Varies';
+      const closeDate = o.close_date
+        ? new Date(o.close_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'TBD';
+      const isUrgent = o.close_date && (new Date(o.close_date) - new Date()) < 1000 * 60 * 60 * 24 * 30;
+      const type = (o.type || 'grant').toUpperCase();
+      const typeCls = type === 'RFP' ? 'type-rfp' : type === 'CONTRACT' ? 'type-contract' : 'type-grant';
+      const postedDate = o.posted_date
+        ? new Date(o.posted_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'Recently';
+
+      return `
+        <div class="grant-row reveal" style="transition-delay:${i * 0.1}s">
+          <div>
+            <div class="grant-title">${o.title}</div>
+            <div class="grant-meta">
+              ${o.agency ? `<span class="grant-tag agency">🏛 ${o.agency}</span>` : ''}
+              <span class="grant-tag">📁 ${o.source || 'Federal'}</span>
+              <span class="grant-tag"><span class="type-badge ${typeCls}">${type}</span></span>
+              <span class="grant-tag">📅 ${postedDate}</span>
+            </div>
+          </div>
+          <div class="grant-right">
+            <div class="grant-amount">${funding}</div>
+            <div class="grant-deadline ${isUrgent ? 'urgent' : ''}">Closes ${closeDate}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Re-observe new elements
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  } catch (e) {
+    console.error('Failed to load opportunities:', e);
+  }
+}
+
 // Scroll reveal
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
@@ -620,8 +628,8 @@ function animateStat(id, target, prefix='', suffix='') {
   }, 30);
 }
 animateStat('stat-new', 47);
-animateStat('stat-total', 2341);
 animateStat('stat-closing', 12);
+loadPublicOpportunities();
 </script>
 </body>
 </html>

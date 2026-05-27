@@ -10,6 +10,23 @@ import json
 router = APIRouter(prefix="/opportunities", tags=["opportunities"])
 
 
+@router.get("/public")
+def public_opportunities(db: Session = Depends(get_db)):
+    """Public endpoint — returns latest 3 real opportunities for landing page preview."""
+    opps = (
+        db.query(Opportunity)
+        .filter_by(is_active=True)
+        .order_by(Opportunity.created_at.desc())
+        .limit(3)
+        .all()
+    )
+    total = db.query(Opportunity).filter_by(is_active=True).count()
+    return {
+        "total": total,
+        "items": [_serialize(o) for o in opps],
+    }
+
+
 @router.get("/")
 def list_opportunities(
     q: str = Query(None),
